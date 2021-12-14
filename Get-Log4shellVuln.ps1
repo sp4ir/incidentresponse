@@ -56,7 +56,7 @@ foreach ($jarFile in $jarFiles) {
         "$($jarFile.ToString()),$($implementationVersion.ToString())" | Out-File -Append $manifestCsv
         Remove-Item $targetManifestFile -ErrorAction SilentlyContinue
         $implementationVersion_ = $implementationVersion.Replace('Implementation-Version: ', '').Split('.')
-        if ($implementationVersion_[0] -eq 2 -and $implementationVersion_[1] -lt 15 ) {
+        if ([int]$implementationVersion_[0] -eq 2 -and [int]$implementationVersion_[1] -lt 15 ) {
             Write-Output "log4shell vulnerable version"
             if ($global:jndiExists) {
                 "$($jarFile.ToString())" | Out-File -Append $vulnerableCsv
