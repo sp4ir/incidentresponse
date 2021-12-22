@@ -1,4 +1,4 @@
-<# Get-Log4shellVuln.ps1
+<# 
     .SYNOPSIS
     Get-Log4shellVuln.ps1 scans all local drives for presence of log4j jar files and analyzes the contents of the jar file to determine if it is vulnerable to #log4shell (CVE-2021-44228) vulnerability
     .DESCRIPTION
@@ -14,9 +14,11 @@
     "C:\log4j.csv" # List of all log4j*.jar files    
     "C:\log4j-manifest.csv" #List of all log4j*.jar files and their manifest version
     "C:\log4j-vuln.csv" #List of only vulnerable log4*.jar files
+    "C:\log4j-vuln16.csv" #List of 2.16 log4*.jar files which are not-vulnerable to RCE CVE-2021-44228 but remain vulnerable to CVE-2021-45105 
     "C:\log4j-jndi.csv" #List of JndiLookup.class files within jar files
 #>
 param (
+    #Specifies a folder to store resultant CSV and TXT files for later analysis. Defaults to C:\
     [Parameter(Mandatory = $false)]
     [string]
     $logFolder = "C:\"
@@ -29,6 +31,7 @@ $log4jCsv = "$logFolder\log4j.csv" # List of all log4j*.jar files
 $targetManifestFile = "$logFolder\log4j-manifest.txt" # Temporary file for extracting manifest meta information from a text file
 $manifestCsv = "$logFolder\log4j-manifest.csv" #List of all log4j*.jar files and their manifest version
 $vulnerableCsv = "$logFolder\log4j-vuln.csv" #List of only vulnerable log4*.jar files
+$vulnerable16Csv = "$logFolder\log4j-vuln16.csv" #List of 2.16 log4*.jar files which are not-vulnerable to RCE CVE-2021-44228 but remain vulnerable to CVE-2021-45105 
 $jndiCsv = "$logFolder\log4j-jndi.csv" #List of JndiLookup.class files within jar files
 $log4Filter = "log4j*.jar"
 Remove-Item $vulnerableCsv -Force -ErrorAction SilentlyContinue
@@ -62,9 +65,11 @@ foreach ($jarFile in $jarFiles) {
                 "$($jarFile.ToString())" | Out-File -Append $vulnerableCsv
                 $global:result = "Vulnerable"
             }
+        }elseif ([int]$implementationVersion_[0] -eq 2 -and [int]$implementationVersion_[1] -eq 16 ) {
+            Write-Output "2.16 is not vulnerable to log4shell (CVE-2021-44228) but is vulnerable to DoS vulnerability CVE-2021-45105"
+            "$($jarFile.ToString())" | Out-File -Append $vulnerable16Csv
         }
     }
-    
 }
 if ($null -eq $global:result) { $global:result = "Not Vulnerable" }
 $global:result | Out-File $resultFile
