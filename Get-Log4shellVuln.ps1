@@ -37,7 +37,7 @@ $log4Filter = "log4j*.jar"
 Remove-Item $vulnerableCsv -Force -ErrorAction SilentlyContinue
 $jarFiles = Get-PSDrive | Where-Object { $_.Name.length -eq 1 } | Select-Object -ExpandProperty Root | Get-ChildItem -File -Recurse -Filter $log4Filter -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
 ####$jarFiles = Get-ChildItem $logFolder -File -Recurse -Filter $log4Filter -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName
-if ($jarFiles) { $jarFiles | Export-Csv $log4jCsv }
+if ($jarFiles) { $jarFiles | Out-File $log4jCsv }
 $global:result = $null
 foreach ($jarFile in $jarFiles) {
     Write-Output "$($jarFile.ToString())"
