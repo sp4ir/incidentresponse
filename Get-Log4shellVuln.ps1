@@ -8,9 +8,9 @@
     Requires .net 4 or later
     Use Update-Log4shellVuln.ps1 to mitigate the vulnerability by deleting the JndiLookup.class from within the vulnerable JAR files. (Note: Industry recommendation is to upgrade, but this may be a good temporary stop-gap)
 
-    "C:\log4j-result.txt" # Final result of script, 'Not Vulnerable' or 'Vulnerable'
-    "C:\log4j-vuln.csv" #List of only vulnerable log4*.jar files
-    
+    Output files:
+    "C:\log4j-result.txt" #Final result of script, 'Not Vulnerable' or 'Vulnerable'
+    "C:\log4j-vuln.csv" #List of only vulnerable log4*.jar files    
     "C:\log4j.csv" # List of all log4j*.jar files    
     "C:\log4j-manifest.csv" #List of all log4j*.jar files and their manifest version
     "C:\log4j-vuln.csv" #List of only vulnerable log4*.jar files
@@ -43,29 +43,28 @@ foreach ($jarFile in $jarFiles) {
     Write-Output "$($jarFile.ToString())"
     $global:jndiExists = $false
     $zip = [System.IO.Compression.ZipFile]::OpenRead($jarFile)
-    $zip.Entries | 
-    Where-Object { $_.Name -like 'JndiLookup.class' } | ForEach-Object {  
-        $output = "$($jarFile.ToString()),$($_.FullName)"      
+    $zip.Entries | Where-Object { $_.Name -like 'JndiLookup.class' } | ForEach-Object {
+        $output = "$($jarFile.ToString()),$($_.FullName)"
         Write-Output $output
-        $output | Out-File -Append $jndiCsv        
-        if ($null -eq $global:result) { $global:result = "Jndi class exists" }      
+        $output | Out-File -Append $jndiCsv
+        if ($null -eq $global:result) { $global:result = "Jndi class exists" }
         $global:jndiExists = $true
-    }    
-    $zip.Entries | 
-    Where-Object { $_.FullName -eq 'META-INF/MANIFEST.MF' } | ForEach-Object {        
+    }
+    $zip.Entries | Where-Object { $_.FullName -eq 'META-INF/MANIFEST.MF' } | ForEach-Object {
         [System.IO.Compression.ZipFileExtensions]::ExtractToFile($_, $targetManifestFile, $true)
         $implementationVersion = (Get-Content $targetManifestFile | Where-Object { $_ -like 'Implementation-Version: *' }).ToString()
         Write-Output $implementationVersion
         "$($jarFile.ToString()),$($implementationVersion.ToString())" | Out-File -Append $manifestCsv
         Remove-Item $targetManifestFile -ErrorAction SilentlyContinue
         $implementationVersion_ = $implementationVersion.Replace('Implementation-Version: ', '').Split('.')
-        if ([int]$implementationVersion_[0] -eq 2 -and [int]$implementationVersion_[1] -lt 15 ) {
+        if ([int]$implementationVersion_[0] -eq 2 -and [int]$implementationVersion_[1] -le 15 ) {
             Write-Output "log4shell vulnerable version"
             if ($global:jndiExists) {
                 "$($jarFile.ToString())" | Out-File -Append $vulnerableCsv
                 $global:result = "Vulnerable"
             }
-        }elseif ([int]$implementationVersion_[0] -eq 2 -and [int]$implementationVersion_[1] -eq 16 ) {
+        }
+        elseif ([int]$implementationVersion_[0] -eq 2 -and [int]$implementationVersion_[1] -eq 16 ) {
             Write-Output "2.16 is not vulnerable to log4shell (CVE-2021-44228) but is vulnerable to DoS vulnerability CVE-2021-45105"
             "$($jarFile.ToString())" | Out-File -Append $vulnerable16Csv
         }
