@@ -46,8 +46,7 @@ foreach ($jarFile in $jarFiles) {
     $zip.Entries | Where-Object { $_.Name -like 'JndiLookup.class' } | ForEach-Object {
         $output = "$($jarFile.ToString()),$($_.FullName)"
         Write-Output $output
-        $output | Out-File -Append $jndiCsv
-        if ($null -eq $global:result) { $global:result = "Jndi class exists" }
+        $output | Out-File -Append $jndiCsv        
         $global:jndiExists = $true
     }
     $zip.Entries | Where-Object { $_.FullName -eq 'META-INF/MANIFEST.MF' } | ForEach-Object {
